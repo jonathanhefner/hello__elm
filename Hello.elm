@@ -1,14 +1,13 @@
 import List
 import Signal
-import Graphics.Element (..)
-import Text (..)
 import Time
+import Html (..)
 import Cycler
 
 
-main : Signal Element
+main : Signal Html
 main =
-  Signal.map plainText (toCycle hellos (Time.every 1500))
+  Signal.map text (toCycle hellos (Time.every 1500))
 
 
 hellos =
