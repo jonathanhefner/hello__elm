@@ -6,8 +6,7 @@ import Cycler
 
 
 main : Signal Html
-main =
-  Signal.map text (toCycle hellos (Time.every 1500))
+main = Signal.map view state
 
 
 hellos =
@@ -17,8 +16,23 @@ hellos =
   , "Hallo Welt"
   ]
 
-toCycle : List a -> Signal b -> Signal a
-toCycle items sampler = 
-  sampler
-  |> Signal.foldp (\_ acc -> Cycler.next acc) (Cycler.new items)
-  |> Signal.map Cycler.value
+type Update = NoOp | Next
+
+type alias State = Cycler.Cycler String
+
+step : Update -> State -> State
+step u s =
+  case u of
+    NoOp -> s
+    Next -> Cycler.next s
+
+view : State -> Html
+view s = text (Cycler.value s)
+
+initState = Cycler.new hellos
+
+updates : Signal Update
+updates = Signal.map (\_ -> Next) (Time.every 1500)
+
+state : Signal State
+state = Signal.foldp step initState updates
