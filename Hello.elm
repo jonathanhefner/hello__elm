@@ -9,7 +9,7 @@ import Cycler (Cycler)
 
 
 main : Signal Html
-main = Signal.map view state
+main = Signal.map view model
 
 
 hellos =
@@ -22,38 +22,38 @@ hellos =
 cycleDelay = 2500
 cycleFps = 10 / (cycleDelay / 1000)
 
-type Update = NoOp | Tick Time | Next
+type Action = NoOp | Tick Time | Next
 
-type alias State = 
+type alias Model = 
   { time : Time
   , cycler : Cycler String
   }
 
-step : Update -> State -> State
-step u s =
-  let next s' = { initState | cycler <- Cycler.next s'.cycler }
-      nextIf s' = if s'.time >= cycleDelay then (next s') else s'
+update : Action -> Model -> Model
+update action model =
+  let next m = { init | cycler <- Cycler.next m.cycler }
+      timedNext m = if m.time >= cycleDelay then (next m) else m
   in 
-      case u of
-        NoOp -> s
-        Tick dt -> nextIf { s | time <- (s.time + dt) }
-        Next -> next s
+      case action of
+        NoOp -> model
+        Tick dt -> timedNext { model | time <- (model.time + dt) }
+        Next -> next model
 
-view : State -> Html
-view s = 
-  h1 [ onClick (Signal.send updateChannel Next) ]
-    [ text (Cycler.value s.cycler) ]
+view : Model -> Html
+view model = 
+  h1 [ onClick (Signal.send actionChannel Next) ]
+    [ text (Cycler.value model.cycler) ]
 
-initState = { time = 0, cycler = Cycler.new hellos }
+init = { time = 0, cycler = Cycler.new hellos }
 
-updateChannel : Signal.Channel Update
-updateChannel = Signal.channel NoOp
+actionChannel : Signal.Channel Action
+actionChannel = Signal.channel NoOp
 
-updates : Signal Update
-updates = 
+actions : Signal Action
+actions = 
   Signal.merge
     (Signal.map (\dt -> Tick dt) (Time.fps cycleFps))
-    (Signal.subscribe updateChannel)
+    (Signal.subscribe actionChannel)
 
-state : Signal State
-state = Signal.foldp step initState updates
+model : Signal Model
+model = Signal.foldp update init actions
